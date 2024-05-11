@@ -1,6 +1,7 @@
 #define LEFT_BUTTON 12
 #define RESET_BUTTON 11
 #define RIGHT_BUTTON 10
+#define LED_PIN 13
 
 #define LOOP_TIME 20
 
@@ -15,6 +16,8 @@ void setPinModes() {
   pinMode(LEFT_BUTTON, INPUT_PULLUP);
   pinMode(RESET_BUTTON, INPUT_PULLUP);
   pinMode(RIGHT_BUTTON, INPUT_PULLUP);
+  
+  pinMode(LED_PIN, OUTPUT);
 }
 
 void setControllerInfo(ControllerInfo * cInfo) {
@@ -34,9 +37,14 @@ void outputControllerInfo(ControllerInfo * cInfo) {
 ControllerInfo controllerInfo = {false, false};
 
 void setup() {
+  digitalWrite(LED_PIN, LOW);
+
   setPinModes();
 
   Serial.begin(9600);
+  while (!Serial) {;}
+
+  digitalWrite(LED_PIN, HIGH);
 }
 
 void loop() {
