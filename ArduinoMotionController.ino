@@ -37,7 +37,9 @@ struct ControllerInfo {
 
 // Init controller info
 ControllerInfo controllerInfo = { false, false, 0, 0, 0 };
-
+float offsetX = 0;
+float offsetY = 0;
+float offsetZ = 0;
 
 // FUNCTIONS
 
@@ -109,14 +111,25 @@ void outputControllerInfo(ControllerInfo* cInfo) {
   Serial.println();
 }
 
+void setOffset() {
+  if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
+    mpu.dmpGetQuaternion(&quat, fifoBuffer);
+    mpu.dmpGetEuler(euler, &quat);
+
+    offsetX = euler[0] * 180/M_PI;
+    offsetY = euler[1] * 180/M_PI;
+    offsetZ = euler[2] * 180/M_PI;
+  }
+}
+
 void getRotation(float* x, float* y, float* z) {
   if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
     mpu.dmpGetQuaternion(&quat, fifoBuffer);
     mpu.dmpGetEuler(euler, &quat);
 
-    *x = euler[0] * 180/M_PI;
-    *y = euler[1] * 180/M_PI;
-    *z = euler[2] * 180/M_PI;
+    *x = (euler[0] * 180/M_PI) - offsetX;
+    *y = (euler[1] * 180/M_PI) - offsetY;
+    *z = (euler[2] * 180/M_PI) - offsetZ;
   }
 }
 
@@ -136,6 +149,8 @@ void setup() {
 }
 
 void loop() {
+  if (digitalRead(RESET_BUTTON) == LOW) setOffset();
+
   setControllerInfo(&controllerInfo);
 
   outputControllerInfo(&controllerInfo);
