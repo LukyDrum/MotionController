@@ -10,7 +10,8 @@
 #define RIGHT_BUTTON 10
 #define LED_PIN 13
 
-#define LOOP_TIME 20
+#define LOOP_TIME 10
+#define SMOOTHING_ITER 10
 
 // The usage of MPU6050 is mostly taken from MPU6050 library and its examples by ElectronicCats:
 // https://github.com/ElectronicCats/mpu6050/tree/master
@@ -122,14 +123,34 @@ void setOffset() {
   }
 }
 
+float totalX = 0;
+float totalY = 0;
+float totalZ = 0;
+int iters = 0;
 void getRotation(float* x, float* y, float* z) {
-  if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-    mpu.dmpGetQuaternion(&quat, fifoBuffer);
-    mpu.dmpGetEuler(euler, &quat);
+  totalX = 0;
+  totalY = 0;
+  totalZ = 0;
+  iters = 0;
 
-    *x = (euler[0] * 180/M_PI) - offsetX;
-    *y = (euler[1] * 180/M_PI) - offsetY;
-    *z = (euler[2] * 180/M_PI) - offsetZ;
+  for (int i = 0; i < SMOOTHING_ITER; i++) {
+    if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
+      mpu.dmpGetQuaternion(&quat, fifoBuffer);
+      mpu.dmpGetEuler(euler, &quat);
+
+      totalX += (euler[0] * 180/M_PI) - offsetX;
+      totalY += (euler[1] * 180/M_PI) - offsetY;
+      totalZ += (euler[2] * 180/M_PI) - offsetZ;
+
+      iters++;
+    }
+    delay(1);
+  }
+
+  if (iters != 0) {
+    *x = totalX / iters;
+    *y = totalY / iters;
+    *z = totalZ / iters;
   }
 }
 
