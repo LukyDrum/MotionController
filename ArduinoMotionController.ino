@@ -10,6 +10,7 @@
 #define RIGHT_BUTTON 10
 #define LED_PIN 13
 
+// Other constants
 #define LOOP_TIME 10
 #define SMOOTHING_ITER 10
 
@@ -38,12 +39,15 @@ struct ControllerInfo {
 
 // Init controller info
 ControllerInfo controllerInfo = { false, false, 0, 0, 0 };
+
+// Current offsets of the gyro
 float offsetX = 0;
 float offsetY = 0;
 float offsetZ = 0;
 
 // FUNCTIONS
 
+// Sets up everything needed for MPU
 void setupMPU() {
   Wire.begin();
   Wire.setClock(400000);
@@ -91,6 +95,7 @@ void setPinModes() {
   pinMode(LED_PIN, OUTPUT);
 }
 
+// Reads the neccesary values and stores them into the cInfo struct
 void setControllerInfo(ControllerInfo* cInfo) {
   cInfo->leftButton = digitalRead(LEFT_BUTTON) == LOW;
   cInfo->rightButton = digitalRead(RIGHT_BUTTON) == LOW;
@@ -98,6 +103,8 @@ void setControllerInfo(ControllerInfo* cInfo) {
   getRotation(&(cInfo->rotX), &(cInfo->rotY), &(cInfo->rotZ));
 }
 
+// Outputs the content of cInfo struct into the Serial
+// Format: "L: 1/0, R: 1/0, X: val, Y: val, Z: val"
 void outputControllerInfo(ControllerInfo* cInfo) {
   Serial.print("L: ");
   Serial.print(cInfo->leftButton);
@@ -112,6 +119,7 @@ void outputControllerInfo(ControllerInfo* cInfo) {
   Serial.println();
 }
 
+// Sets the current values of the gyro as the offsets
 void setOffset() {
   if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
     mpu.dmpGetQuaternion(&quat, fifoBuffer);
@@ -123,16 +131,20 @@ void setOffset() {
   }
 }
 
+
 float totalX = 0;
 float totalY = 0;
 float totalZ = 0;
 int iters = 0;
+// Stores the rotation of the gyro into the x, y, z variables. Also applies simple smoothing (using the variables above)
 void getRotation(float* x, float* y, float* z) {
+  // Reset values
   totalX = 0;
   totalY = 0;
   totalZ = 0;
   iters = 0;
 
+  // Do set ammount of iterations
   for (int i = 0; i < SMOOTHING_ITER; i++) {
     if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
       mpu.dmpGetQuaternion(&quat, fifoBuffer);
@@ -147,6 +159,7 @@ void getRotation(float* x, float* y, float* z) {
     delay(1);
   }
 
+  // Store the average values
   if (iters != 0) {
     *x = totalX / iters;
     *y = totalY / iters;
@@ -158,6 +171,7 @@ void getRotation(float* x, float* y, float* z) {
 // MAIN CODE
 
 void setup() {
+  // Turn the LED off = controller is not ready
   digitalWrite(LED_PIN, LOW);
 
   setPinModes();
@@ -166,10 +180,12 @@ void setup() {
 
   setupMPU();
 
+  // Turn the LED on = controller is ready
   digitalWrite(LED_PIN, HIGH);
 }
 
 void loop() {
+  // Check for the press of the Reset button
   if (digitalRead(RESET_BUTTON) == LOW) setOffset();
 
   setControllerInfo(&controllerInfo);
