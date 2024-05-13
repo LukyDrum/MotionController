@@ -11,7 +11,7 @@
 #define LED_PIN 13
 
 // Other constants
-#define LOOP_TIME 10
+#define LOOP_TIME 40
 #define SMOOTHING_ITER 10
 
 // The usage of MPU6050 is mostly taken from MPU6050 library and its examples by ElectronicCats:
@@ -156,6 +156,7 @@ void getRotation(float* x, float* y, float* z) {
 
       iters++;
     }
+
     delay(1);
   }
 
@@ -164,6 +165,13 @@ void getRotation(float* x, float* y, float* z) {
     *x = totalX / iters;
     *y = totalY / iters;
     *z = totalZ / iters;
+
+    // Set LED on if everything is OK
+    digitalWrite(LED_PIN, HIGH);
+  }
+  else {
+    // Set LED off if there is a problem
+    digitalWrite(LED_PIN, LOW);
   }
 }
 
